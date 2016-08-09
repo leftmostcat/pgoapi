@@ -45,13 +45,15 @@ logger = logging.getLogger(__name__)
 
 class PGoApi:
 
-    def __init__(self, provider=None, oauth2_refresh_token=None, username=None, password=None, position_lat=None, position_lng=None, position_alt=None):
+    def __init__(self, provider=None, oauth2_refresh_token=None, username=None, password=None, position_lat=None, position_lng=None, position_alt=None, proxy=None):
         self.set_logger()
         self.log.info('%s v%s - %s', __title__, __version__, __copyright__)
 
         self._auth_provider = None
         if provider is not None and ((username is not None and password is not None) or (oauth2_refresh_token is not None)):
             self.set_authentication(provider, oauth2_refresh_token, username, password)
+
+        self._proxy = proxy
 
         self.set_api_endpoint("pgorelease.nianticlabs.com/plfe")
 
@@ -104,6 +106,9 @@ class PGoApi:
 
     def get_auth_provider(self):
         return self._auth_provider
+
+    def get_proxy(self):
+        return self._proxy
 
     def create_request(self):
         request = PGoApiRequest(self, self._position_lat, self._position_lng, self._position_alt)
@@ -185,6 +190,7 @@ class PGoApiRequest:
         """ Inherit necessary parameters from parent """
         self._api_endpoint = self.__parent__.get_api_endpoint()
         self._auth_provider = self.__parent__.get_auth_provider()
+        self._proxy = self.__parent__.get_proxy()
 
         self._position_lat = position_lat
         self._position_lng = position_lng
@@ -203,7 +209,7 @@ class PGoApiRequest:
             self.log.info('Not logged in')
             return NotLoggedInException()
 
-        request = RpcApi(self._auth_provider)
+        request = RpcApi(self._auth_provider, proxy=self._proxy)
 
         lib_path = self.__parent__.get_signature_lib()
         if lib_path is not None:
